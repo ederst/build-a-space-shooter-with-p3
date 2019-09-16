@@ -54,6 +54,17 @@ class Player extends Entity {
     this.play("sprPlayer");
   }
 
+  onDestroy() {
+    this.scene.time.addEvent({ // go to game over scene
+      delay: 2000,
+      callback: function() {
+        this.scene.scene.start("SceneGameOver");
+      },
+      callbackScope: this,
+      loop: false
+    });
+  }
+
   moveUp() {
     this.body.velocity.y = -this.getData("speed");
   }
@@ -114,6 +125,9 @@ class ChaserShip extends Entity {
     super(scene, x, y, "sprEnemy1", "ChaserShip");
     this.body.velocity.y = Phaser.Math.Between(50, 100);
 
+    this.initialSpeed = this.body.velocity.y;
+    this.chaseSpeed = this.initialSpeed * 1.3;
+
     this.states = {
       MOVE_DOWN: "MOVE_DOWN",
       CHASE: "CHASE"
@@ -129,22 +143,25 @@ class ChaserShip extends Entity {
         this.y,
         this.scene.player.x,
         this.scene.player.y
-      ) < 100) {
+      ) < 300) {
         this.state = this.states.CHASE;
       }
 
       if (this.state == this.states.CHASE) {
-        var dx = this.scene.player.x - this.x;
-        var dy = this.scene.player.y - this.y;
+        if (!this.scene.player.getData("isDead")) {
+          var dx = this.scene.player.x - this.x;
+          var dy = this.scene.player.y - this.y;
 
-        var angle = Math.atan2(dy, dx);
+          var angle = Math.atan2(dy, dx);
 
-        var speed = 100;
-
-        this.body.setVelocity(
-          Math.cos(angle) * speed,
-          Math.sin(angle) * speed
-        );
+          this.body.setVelocity(
+            Math.cos(angle) * this.chaseSpeed,
+            Math.sin(angle) * this.chaseSpeed
+          );
+        } else {
+          this.body.setVelocity(0, this.initialSpeed);
+          this.state = this.states.MOVE_DOWN;
+        }
       }
 
       if (this.x < this.scene.player.x) {
@@ -200,9 +217,53 @@ class CarrierShip extends Entity {
 
 }
 
+
+class ScrollingBackground {
+
+  constructor(scene, key, velocityY) {
+    this.scene = scene;
+    this.key = key;
+    this.velocityY = velocityY;
+
+    this.layers = this.scene.add.group();
+
+    this.createLayers();
+  }
+
+  createLayers() {
+    for (var i = 0; i < 2; i++) {
+      var layer = this.scene.add.sprite(0,0, this.key);
+
+      layer.y = (layer.displayHeight * i);
+
+      var flipX = Phaser.Math.Between(0, 10) >= 5 ? -1 : 1;
+      var flipY = Phaser.Math.Between(0, 10) >= 5 ? -1 : 1;
+
+      layer.setScale(flipX * 2, flipY * 2);
+      layer.setDepth(-5 - (i - 1));
+
+      this.scene.physics.world.enableBody(layer, 0);
+      layer.body.velocity.y = this.velocityY;
+
+      this.layers.add(layer);
+    }
+  }
+
+  update() {
+    if (this.layers.getChildren()[0].y > 0) {
+      for (var i = 0; i < this.layers.getChildren().length; i++) {
+        var layer = this.layers.getChildren()[i];
+        layer.y = (-layer.displayHeight) + (layer.displayHeight * i);
+      }
+    }
+  }
+
+}
+
 module.exports = {
   Player: Player,
   GunShip: GunShip,
   ChaserShip: ChaserShip,
-  CarrierShip: CarrierShip
+  CarrierShip: CarrierShip,
+  ScrollingBackground: ScrollingBackground
 }

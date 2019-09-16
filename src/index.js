@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import SceneMainMenu from './scenes/SceneMainMenu.js'
 import SceneMain from './scenes/SceneMain.js'
+import SceneGameOver from './scenes/SceneGameOver.js';
 
 var config = {
   type: Phaser.WEBGL,
@@ -15,7 +16,8 @@ var config = {
   },
   scene: [
     SceneMainMenu,
-    SceneMain
+    SceneMain,
+    SceneGameOver
   ],
   pixelArt: true,
   roundPixels: true
